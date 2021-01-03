@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+       					   http://www.springframework.org/schema/beans/spring-beans.xsd
+       					   http://www.springframework.org/schema/aop
+       					   http://www.springframework.org/schema/aop/spring-aop.xsd">
+	<aop:config>
+		<aop:pointcut id="transactional" expression="execution(*XmlRetryService.xmlRetryService(..))" />
+		<aop:advisor pointcut-ref="transactional" advice-ref="taskRetryAdvice" order="-1" />
+	</aop:config>
+	<bean id="taskRetryAdvice" class="org.springframework.retry.interceptor.RetryOperationsInterceptor">
+		<property name="RetryOperations" ref="taskRetryTemplate" />
+	</bean>
+	<bean id="taskRetryTemplate" class="org.springframework.retry.support.RetryTemplate">
+		<property name="retryPolicy" ref="taskRetryPolicy" />
+		<property name="backOffPolicy" ref="exponentialBackOffPolicy" />
+	</bean>
+	<bean id="taskRetryPolicy" class="org.springframework.retry.policy.SimpleRetryPolicy">
+		<constructor-arg index="0" value="5" />
+		<constructor-arg index="1">
+			<map>
+				<entry key="org.springframework.remoting.RemoteAccessException" value="true" />
+			</map>
+		</constructor-arg>
+	</bean>
+	<bean id="exponentialBackOffPolicy"
+		class="org.springframework.retry.backoff.ExponentialBackOffPolicy">
+		<property name="initialInterval" value="300" />
+		<property name="maxInterval" value="30000" />
+		<property name="multiplier" value="2.0" />
+	</bean>
+</beans>
+
+
+
